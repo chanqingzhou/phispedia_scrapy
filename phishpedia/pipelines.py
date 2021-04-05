@@ -9,3 +9,7 @@
 class PhishpediaPipeline(object):
     def process_item(self, item, spider):
         return item
+
+class PhishPipeline(object):
+    def process_item(self, item, spider):
+        return item

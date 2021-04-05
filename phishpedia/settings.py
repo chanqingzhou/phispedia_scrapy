@@ -16,8 +16,8 @@ NEWSPIDER_MODULE = 'phishpedia.spiders'
 
 
 # Crawl responsibly by identifying yourself (and your website) on the user-agent
-#USER_AGENT = 'phishpedia (+http://www.yourdomain.com)'
-
+#USER_AGENT = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/58.0.3029.110 Safari/537.36'#
+USER_AGENT = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/58.0.3029.110 Safari/537.36'
 # Obey robots.txt rules
 ROBOTSTXT_OBEY = False
 
@@ -32,18 +32,24 @@ RETRY_ENABLED = False
 SPIDER_MIDDLEWARES = {
     'scrapy_splash.SplashDeduplicateArgsMiddleware': 100,
 }
-DUPEFILTER_CLASS = 'scrapy_splash.SplashAwareDupeFilter'
 
+SPLASH_LOG_400 = True
+
+#ITEM_PIPELINES = {'scrapy.pipelines.images.ImagesPipeline': 1}
+#IMAGES_STORE = r'D:\Phishing'
+IMAGES_EXPIRES = 0
+HTTPERROR_ALLOWED_CODES  =[503,504]
+DUPEFILTER_CLASS = 'scrapy.dupefilters.BaseDupeFilter'
 HTTPCACHE_STORAGE = 'scrapy_splash.SplashAwareFSCacheStorage'
 #Configure maximum concurrent requests performed by Scrapy (default: 16)
-CONCURRENT_REQUESTS = 128
+CONCURRENT_REQUESTS = 64
 
 # Configure a delay for requests for the same website (default: 0)
 # See https://docs.scrapy.org/en/latest/topics/settings.html#download-delay
 # See also autothrottle settings and docs
-#DOWNLOAD_DELAY = 3
+DOWNLOAD_DELAY = 3
 # The download delay setting will honor only one of:
-#CONCURRENT_REQUESTS_PER_DOMAIN = 16
+CONCURRENT_REQUESTS_PER_DOMAIN = 1
 #CONCURRENT_REQUESTS_PER_IP = 16
 
 # Disable cookies (enabled by default)

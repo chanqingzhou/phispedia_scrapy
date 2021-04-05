@@ -26,7 +26,7 @@ function main(splash, args)
      new_data['width'] = data.width
      new_data['height'] = data.height
      srcs[#srcs+1] = new_data
-         
+
   end
   return {
     elements = srcs,
@@ -40,31 +40,28 @@ end
 
 script = """
 function main(splash, args)
-  splash:set_viewport_size(1920,1080)
   assert(splash:go(splash.args.url))
   assert(splash:wait(3))
   return {
     html = splash:html(),
-    png = splash:png(),
+    png = splash:png{render_all=true},
     har = splash:har(),
     url = splash:url()
   }
 end
 """
-class MyItem(scrapy.Item):
-    # ... other item fields ...
-    image_urls = scrapy.Field()
-    images = scrapy.Field()
-    file_path= scrapy.Field()
+
 
 class ExtractSpider(scrapy.Spider):
-    name = 'extract'
+    name = 'of_extract'
     num = 0
     saveLocation = os.getcwd()
 
     custom_settings = {
-
-        "HTTPERROR_ALLOWED_CODES":[503]
+        "ITEM_PIPELINES": {'phishpedia.pipelines.PhishPipeline': 300},
+        "IMAGES_STORE": saveLocation,
+        "IMAGES_EXPIRES": 0,
+        "HTTPERROR_ALLOWED_CODES": [503]
     }
 
     def clean_domain(self, domain, deletechars='\/:*?"<>|'):
@@ -73,61 +70,37 @@ class ExtractSpider(scrapy.Spider):
         return domain
 
     def start_requests(self):
-        SERVER = "172.26.191.54"
-        PORT = 8080
-        print("start")
-        connection = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        connection.connect((SERVER, PORT))
-        print("connected")
-        while True:
-            if self.num > 100:
-                print(self.num)
-                time.sleep(100)
-                self.num -= 10
-            connection.send('1'.encode('utf-8'))
-            msg = connection.recv(2048)
-            msg = msg.decode('utf-8')
-            if msg == '1':
+        file_path = 'D:/ruofan/git_space/phishpedia/benchmark/DatabaseJun13-Sep30'
+        for folder in os.listdir(file_path):
+            act_path = os.path.join(file_path, folder)
+            info_path = os.path.join(act_path, 'info.txt')
+            with open(info_path) as f:
+                info = eval(f.read())
+            url = info['url'].strip()
 
-                time.sleep(1)
-                continue
-            else:
-                url = msg
 
-                if '*.' in url:
-                    continue
-                url = 'https://' + url
-                date_now = time.strftime("%Y-%m-%d", time.localtime(time.time()))
 
-                output_log = os.path.join("E:/screenshots_rf", date_now+'.txt')
-                with open(output_log,'a+') as f:
-                    f.write(url+'\n')
-                splash_args = {
-                    'lua_source': script,
-                    'filters': 'fanboy-annoyance',
-                    'timeout': 90,
-                    'resource_timeout': 10
+            output_log = os.path.join("X:/", 'of.txt')
+            with open(output_log, 'a+') as f:
+                f.write(url + '\n')
+            splash_args = {
+                'lua_source': script,
+                'filters': 'fanboy-annoyance',
+                'timeout': 90,
+                'resource_timeout': 10
 
-                }
-                yield SplashRequest(url, self.parse_result, endpoint='execute', args=splash_args)
+            }
+            yield SplashRequest(url, self.parse_result, endpoint='execute', args=splash_args)
 
     def parse_result(self, response):
-       
-        if response.status == 503:
-            print(self.num)
-            self.num += 1
-            return
-        else:
-            self.num -= 1
-            self.num = max(0, self.num)
-            
+
         url = response.request._original_url
         domain = self.clean_domain(urlparse(response.data['url']).netloc, '\/:*?"<>|')
 
         png_bytes = base64.b64decode(response.data['png'])
         date_now = time.strftime("%Y-%m-%d", time.localtime(time.time()))
 
-        output_folder = os.path.join("E:/screenshots_rf", date_now)
+        output_folder = os.path.join("X:/", 'of')
         if not os.path.exists(output_folder):
             os.makedirs(output_folder)
 
@@ -140,7 +113,7 @@ class ExtractSpider(scrapy.Spider):
         html_path = os.path.join(output_folder, "html.txt")
         lure_path = os.path.join(output_folder, "lure.txt")
         div_info = os.path.join(output_folder, "div.txt")
-        
+
         with open(screenshot_path, 'wb+') as f:
             f.write(png_bytes)
 
@@ -152,7 +125,7 @@ class ExtractSpider(scrapy.Spider):
 
         with open(lure_path, 'w+') as f:
             f.write(url)
-        
+
         '''
         with open(div_info, 'w+') as f:
             ele_list = []
@@ -163,6 +136,7 @@ class ExtractSpider(scrapy.Spider):
 
 
         '''
+
     def url_join(self, urls, response):
         joined_urls = []
         for url in urls:

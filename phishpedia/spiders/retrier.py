@@ -40,12 +40,11 @@ end
 
 script = """
 function main(splash, args)
-  splash:set_viewport_size(1920,1080)
   assert(splash:go(splash.args.url))
   assert(splash:wait(3))
   return {
     html = splash:html(),
-    png = splash:png(),
+    png = splash:png{render_all=true},
     har = splash:har(),
     url = splash:url()
   }
@@ -58,12 +57,14 @@ class MyItem(scrapy.Item):
     file_path= scrapy.Field()
 
 class ExtractSpider(scrapy.Spider):
-    name = 'extract'
+    name = 'extract2'
     num = 0
     saveLocation = os.getcwd()
 
     custom_settings = {
-
+        "ITEM_PIPELINES": {'phishpedia.pipelines.PhishPipeline': 300},
+        "IMAGES_STORE": saveLocation,
+        "IMAGES_EXPIRES": 0,
         "HTTPERROR_ALLOWED_CODES":[503]
     }
 
@@ -73,35 +74,14 @@ class ExtractSpider(scrapy.Spider):
         return domain
 
     def start_requests(self):
-        SERVER = "172.26.191.54"
-        PORT = 8080
-        print("start")
-        connection = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        connection.connect((SERVER, PORT))
-        print("connected")
-        while True:
-            if self.num > 100:
-                print(self.num)
-                time.sleep(100)
-                self.num -= 10
-            connection.send('1'.encode('utf-8'))
-            msg = connection.recv(2048)
-            msg = msg.decode('utf-8')
-            if msg == '1':
-
-                time.sleep(1)
+        df = pd.read_csv('D:/junyang/phispedia/phispedia_scrapy/phishpedia/spiders/retry.csv')
+        counter = 0
+        for i in range(len(df)):
+            row = df.iloc[i]
+            if (row['yes'] > 0 or row['unsure'] > 0 ) and row['no'] == 0:
+                url = row['url']
+                counter +=1
                 continue
-            else:
-                url = msg
-
-                if '*.' in url:
-                    continue
-                url = 'https://' + url
-                date_now = time.strftime("%Y-%m-%d", time.localtime(time.time()))
-
-                output_log = os.path.join("E:/screenshots_rf", date_now+'.txt')
-                with open(output_log,'a+') as f:
-                    f.write(url+'\n')
                 splash_args = {
                     'lua_source': script,
                     'filters': 'fanboy-annoyance',
@@ -110,7 +90,7 @@ class ExtractSpider(scrapy.Spider):
 
                 }
                 yield SplashRequest(url, self.parse_result, endpoint='execute', args=splash_args)
-
+        print(counter)
     def parse_result(self, response):
        
         if response.status == 503:
@@ -127,7 +107,7 @@ class ExtractSpider(scrapy.Spider):
         png_bytes = base64.b64decode(response.data['png'])
         date_now = time.strftime("%Y-%m-%d", time.localtime(time.time()))
 
-        output_folder = os.path.join("E:/screenshots_rf", date_now)
+        output_folder = os.path.join('X:/', 'plausible_phishing')
         if not os.path.exists(output_folder):
             os.makedirs(output_folder)
 
